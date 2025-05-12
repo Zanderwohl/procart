@@ -1,13 +1,20 @@
 mod circle;
+mod gallery;
+mod bubbles;
+mod common;
 
+use bevy::color::palettes::css::DIM_GRAY;
 use bevy::prelude::*;
+use bevy::render::view::RenderLayers;
 use bevy::window::ExitCondition;
 use bevy_egui::{egui, EguiContexts, EguiPlugin, EguiContextPass};
 use bevy_vector_shapes::prelude::*;
 
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
+use crate::bubbles::BubbleArt;
 use crate::circle::CircleArt;
+use crate::gallery::GalleryArt;
 
 fn main() {
     App::new()
@@ -20,8 +27,9 @@ fn main() {
                 exit_condition: ExitCondition::OnPrimaryClosed,
                 close_when_requested: true,
             }),
-            Shape2dPlugin::default(),
+            ShapePlugin::default(),
         ))
+        .insert_resource(ClearColor(DIM_GRAY.into()))
         .add_plugins(EguiPlugin { enable_multipass_for_primary_context: true })
         .add_event::<Quit>()
         .init_state::<ProgramState>()
@@ -31,9 +39,11 @@ fn main() {
             ProgramState::shortcuts,
             exit_system,
             ))
-        .add_plugins(
+        .add_plugins((
             CircleArt,
-        )
+            GalleryArt,
+            BubbleArt,
+        ))
         .run();
 }
 
@@ -42,6 +52,8 @@ enum ProgramState {
     #[default]
     MainMenu,
     Circle,
+    Gallery,
+    Bubbles,
 }
 
 impl ProgramState {
@@ -104,7 +116,12 @@ fn ui_example_system(mut contexts: EguiContexts) {
 
 fn setup(mut commands: Commands) {
     // Spawn the camera
-    commands.spawn(Camera2d);
+    commands.spawn((
+        Camera3d::default(),
+        Transform::from_xyz(0., 0., 16.).looking_at(Vec3::ZERO, Vec3::Y),
+        Msaa::Off,
+        RenderLayers::default(),
+    ));
 }
 
 #[derive(Event)]

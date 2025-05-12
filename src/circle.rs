@@ -26,5 +26,5 @@ impl Plugin for CircleArt {
 
 fn draw(mut painter: ShapePainter) {
     // Draw a circle
-    painter.circle(100.0);
+    painter.circle(1.0);
 }
