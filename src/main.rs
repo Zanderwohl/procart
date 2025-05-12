@@ -32,6 +32,7 @@ fn main() {
         .insert_resource(ClearColor(DIM_GRAY.into()))
         .add_plugins(EguiPlugin { enable_multipass_for_primary_context: true })
         .add_event::<Quit>()
+        .init_resource::<UIState>()
         .init_state::<ProgramState>()
         .add_systems(EguiContextPass, ProgramState::selection_system.run_if(in_state(ProgramState::MainMenu)))
         .add_systems(Startup, setup)
@@ -54,6 +55,19 @@ enum ProgramState {
     Circle,
     Gallery,
     Bubbles,
+}
+
+#[derive(Resource)]
+struct UIState {
+    params_panel: bool,
+}
+
+impl Default for UIState {
+    fn default() -> Self {
+        Self {
+            params_panel: false,
+        }
+    }
 }
 
 impl ProgramState {
@@ -95,6 +109,7 @@ impl ProgramState {
     pub fn shortcuts(
         program_state: Res<State<ProgramState>>,
         mut next_program_state: ResMut<NextState<ProgramState>>,
+        mut ui_state: ResMut<UIState>,
         keys: Res<ButtonInput<KeyCode>>,
         mut quit: EventWriter<Quit>,
     ) {
@@ -104,6 +119,9 @@ impl ProgramState {
             } else {
                 next_program_state.set(ProgramState::MainMenu);
             }
+        }
+        if keys.just_pressed(KeyCode::Backquote) && program_state.ne(&ProgramState::MainMenu) {
+            ui_state.params_panel = !ui_state.params_panel;
         }
     }
 }
