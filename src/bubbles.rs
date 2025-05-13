@@ -37,12 +37,17 @@ fn params_ui(
     ui_state: Res<UIState>,
     program_state: Res<State<ProgramState>>,
     mut bubbles: ResMut<Bubbles>,
+    mut rays: ResMut<Rays>,
 ) {
     if !ui_state.params_panel || !program_state.eq(&ProgramState::Bubbles) {
         return;
     }
 
     egui::Window::new("Params").show(contexts.ctx_mut(), |ui| {
+        ui.heading("Steps");
+        ui.checkbox(&mut bubbles.render, "Bubbles");
+        ui.checkbox(&mut rays.render, "Rays");
+
         ui.heading("Thickness");
         ui.add(egui::Slider::new(&mut bubbles.thickness, 0.01..=0.1).text("Outer"));
 
@@ -64,6 +69,14 @@ fn params_ui(
         ui.heading("Positioning");
         ui.add(egui::Slider::new(&mut bubbles.starting, 0.0..=10.0).text("Starting"));
         ui.add(egui::Slider::new(&mut bubbles.starting_range, 0.0..=5.0).text("Range"));
+
+        ui.heading("Rays");
+        ui.add(egui::Slider::new(&mut rays.angle, 0.0..=TAU).text("Angle"));
+        ui.add(egui::Slider::new(&mut rays.min_length, 0.0..=10.0).text("Min Length").step_by(0.1));
+        ui.add(egui::Slider::new(&mut rays.max_length, 0.1..=10.0).text("Max Length").step_by(0.1));
+        ui.add(egui::Slider::new(&mut rays.thickness, 0.0..=1.0).text("Thickness"));
+        ui.add(egui::Slider::new(&mut rays.alpha, 0.0..=1.0).text("Alpha"));
+        ui.add(egui::Slider::new(&mut rays.speed, 0.0..=10.0).text("Speed"));
     });
 }
 
@@ -81,12 +94,19 @@ fn draw(mut painter: ShapePainter, time: Res<Time>, windows: Query<&Window>, bub
     painter.rect(Vec2::new(width, height));
 
     // Draw bubbles
-    bubbles.draw(&mut painter, seconds);
+    if bubbles.render {
+        bubbles.draw(&mut painter, seconds);
+    }
+
+    if rays.render {
+        rays.draw(&mut painter, seconds);
+    }
 }
 
 #[derive(Resource)]
 struct Bubbles {
     bubbles: Vec<Bubble>,
+    render: bool,
     thickness: f32,
     shine_start: f32,
     shine_end: f32,
@@ -129,6 +149,7 @@ impl Default for Bubbles {
         Self {
             bubbles,
 
+            render: true,
             thickness: 0.01,
             shine_start: PI / 6.0,
             shine_end: PI / 3.0,
@@ -188,15 +209,80 @@ impl Bubble {
 #[derive(Resource)]
 struct Rays {
     rays: Vec<Ray>,
+    origin: Vec2,
+    render: bool,
+    angle: f32,
+    min_length: f32,
+    max_length: f32,
+    thickness: f32,
+    alpha: f32,
+    speed: f32,
+}
+
+impl Rays {
+    fn draw(&self, painter: &mut ShapePainter, seconds: f32) {
+        for ray in &self.rays {
+            ray.draw(painter, seconds, self);
+        }
+    }
 }
 
 impl Default for Rays {
     fn default() -> Self {
         let mut rays = Vec::new();
-        Self { rays }
+        let mut rng = rand::rng();
+
+        let mut acc: f32 = 0.0;
+        for _ in 0..60 {
+            let thickness = rng.random::<f32>();
+            let length = rng.random::<f32>();
+            let offset = rng.random::<f32>();
+            let frequency = rng.random::<f32>();
+            let x = acc + (thickness / 2.0);
+            acc += thickness;
+            rays.push(Ray {
+                thickness,
+                length,
+                offset,
+                frequency,
+                x,
+            })
+        }
+
+        Self {
+            rays,
+            origin: Vec2::new(-6.5, 2.5),
+            angle: 5.1,
+            render: true,
+            min_length: 0.5,
+            max_length: 5.5,
+            thickness: 1.0,
+            alpha: 0.03,
+            speed: 8.5,
+        }
     }
 }
 
 struct Ray {
+    x: f32,
+    length: f32,
+    thickness: f32,
+    offset: f32,
+    frequency: f32,
+}
 
+impl Ray {
+    fn draw(&self, painter: &mut ShapePainter, seconds: f32, params: &Rays) {
+        let origin = params.origin;
+        painter.set_translation(origin.extend(2.0));
+        painter.thickness = params.thickness * self.thickness;
+
+        let alpha = params.alpha * f32::sin(self.frequency * (seconds - self.offset) * params.speed);
+        painter.set_color(YELLOW.pastel_very().with_alpha(alpha));
+
+        let length = (params.max_length - params.min_length) * self.length + params.min_length;
+        let start = origin + Vec2::new(self.x * params.thickness, 0.0);
+        let end = start + Vec2::new(length * params.angle.cos(), length * params.angle.sin());
+        painter.line(start.extend(2.0), end.extend(2.0));
+    }
 }

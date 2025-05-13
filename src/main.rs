@@ -2,6 +2,7 @@ mod circle;
 mod gallery;
 mod bubbles;
 mod common;
+mod summer_leaves;
 
 use bevy::color::palettes::css::DIM_GRAY;
 use bevy::prelude::*;
@@ -15,6 +16,7 @@ use strum_macros::EnumIter;
 use crate::bubbles::BubbleArt;
 use crate::circle::CircleArt;
 use crate::gallery::GalleryArt;
+use crate::summer_leaves::LeafArt;
 
 fn main() {
     App::new()
@@ -44,6 +46,7 @@ fn main() {
             CircleArt,
             GalleryArt,
             BubbleArt,
+            LeafArt,
         ))
         .run();
 }
@@ -55,6 +58,7 @@ enum ProgramState {
     Circle,
     Gallery,
     Bubbles,
+    SummerLeaves,
 }
 
 #[derive(Resource)]
