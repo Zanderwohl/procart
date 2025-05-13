@@ -15,6 +15,7 @@ use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 use crate::bubbles::BubbleArt;
 use crate::circle::CircleArt;
+use crate::common::CachedRandom;
 use crate::gallery::GalleryArt;
 use crate::summer_leaves::LeafArt;
 
@@ -35,6 +36,7 @@ fn main() {
         .add_plugins(EguiPlugin { enable_multipass_for_primary_context: true })
         .add_event::<Quit>()
         .init_resource::<UIState>()
+        .init_resource::<CachedRandom>()
         .init_state::<ProgramState>()
         .add_systems(EguiContextPass, ProgramState::selection_system.run_if(in_state(ProgramState::MainMenu)))
         .add_systems(Startup, setup)
@@ -128,12 +130,6 @@ impl ProgramState {
             ui_state.params_panel = !ui_state.params_panel;
         }
     }
-}
-
-fn ui_example_system(mut contexts: EguiContexts) {
-    egui::Window::new("Hello").show(contexts.ctx_mut(), |ui| {
-        ui.label("world");
-    });
 }
 
 fn setup(mut commands: Commands) {

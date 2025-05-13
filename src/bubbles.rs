@@ -84,7 +84,7 @@ static CYCLE: f32 = 4.0;
 
 fn draw(mut painter: ShapePainter, time: Res<Time>, windows: Query<&Window>, bubbles: Res<Bubbles>, rays: Res<Rays>) {
     let seconds = time.elapsed_secs();
-    let start_pos = painter.transform;
+    // let start_pos = painter.transform;
 
     let window: &Window = windows.single().unwrap();
     let width = window.resolution.width();
@@ -178,8 +178,8 @@ impl Bubble {
         let pos = self.pos(seconds, params);
         painter.set_translation(pos.extend(1.0));
         painter.hollow = true;
-        let r_1 = params.outer_radius_min.lerp(params.outer_radius_max, self.t(seconds, params)) * self.scale;
-        let r_2 = params.inner_radius_min.lerp(params.inner_radius_max, self.t(seconds, params)) * self.scale;
+        let r_1 = params.outer_radius_min.lerp(params.outer_radius_max, self.t(seconds)) * self.scale;
+        let r_2 = params.inner_radius_min.lerp(params.inner_radius_max, self.t(seconds)) * self.scale;
 
         painter.thickness = params.thickness;
         painter.circle(r_1);
@@ -188,13 +188,13 @@ impl Bubble {
         painter.arc(r_2, params.shine_start, params.shine_end);
     }
 
-    fn t(&self, seconds: f32, params: &Bubbles) -> f32 {
+    fn t(&self, seconds: f32) -> f32 {
         let frac = (seconds % CYCLE) / CYCLE;
         (frac + 1.0 + self.spawn_offset) % 1.0
     }
 
     fn pos(&self, seconds: f32, params: &Bubbles) -> Vec2 {
-        let t = self.t(seconds, params);
+        let t = self.t(seconds);
         let x = self.x + (seconds + self.wobble_offset * params.wobble_frequency).sin() * params.wobble_size;
         let start = Vec2::new(t, -params.starting - (self.scale * params.starting_range));
         let end = Vec2::new(t, params.starting + (self.scale * params.starting_range));
